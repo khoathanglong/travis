@@ -6,7 +6,7 @@ import index from '../index.vue';
 import patientAPI from '@/axios/patient';
 import fileAPI from '@/axios/file';
 
-describe.only('index', () => {
+describe('index', () => {
   // call this api when component is created
   afterEach(() => {
     jest.clearAllMocks();
@@ -58,7 +58,7 @@ describe.only('index', () => {
     expect(getPatientList).toBeCalledWith(wrapper.vm.currentProject);
   });
 
-  it.only('getPatientList', async () => {
+  it('getPatientList', async () => {
     const projectId = 'projectId';
     // const getPatientList = jest.spyOn(wrapper.vm, 'getPatientList');
     const patientList = [{
