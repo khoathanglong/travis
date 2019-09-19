@@ -57,7 +57,7 @@ describe('index', () => {
 
   it('getPatientList', async () => {
     const projectId = 'projectId';
-    const getPatientList = jest.spyOn(wrapper.vm, 'getPatientList');
+    // const getPatientList = jest.spyOn(wrapper.vm, 'getPatientList');
     const patientList = [{
       sequence: 1,
       patientName: 'alex',
@@ -65,7 +65,7 @@ describe('index', () => {
       patientId: 'xxxx',
     }];
     patientAPI.filteredPatients = jest.fn().mockResolvedValue(patientList);
-    getPatientList(projectId);
+    wrapper.vm.getPatientList(projectId);
     expect(wrapper.vm.loading).toEqual(true);
 
     await flushPromises();
