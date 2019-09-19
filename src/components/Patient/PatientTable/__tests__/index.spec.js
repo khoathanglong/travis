@@ -55,7 +55,7 @@ describe('index', () => {
     expect(getPatientList).toBeCalledWith(wrapper.vm.currentProject);
   });
 
-  it('getPatientList', async () => {
+  it.only('getPatientList', async () => {
     const projectId = 'projectId';
     // const getPatientList = jest.spyOn(wrapper.vm, 'getPatientList');
     const patientList = [{
