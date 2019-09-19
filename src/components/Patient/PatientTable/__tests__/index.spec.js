@@ -8,6 +8,10 @@ import fileAPI from '@/axios/file';
 
 describe('index', () => {
   // call this api when component is created
+  afterEach(() => {
+    jest.clearAllMocks();
+    jest.resetAllMocks();
+  });
   const PROJECT_ID = '';
   const $store = new Store({
     state: {
@@ -71,6 +75,7 @@ describe('index', () => {
     await flushPromises();
     expect(wrapper.vm.loading).toEqual(false);
     expect(wrapper.vm.items).toEqual(patientList);
+    filteredPatients.mockClear();
   });
 
   it('load file list of a patient when open the dropdown:SUCCESS CASE', async () => {
