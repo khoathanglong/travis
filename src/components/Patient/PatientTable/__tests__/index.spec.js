@@ -74,6 +74,10 @@ describe.only('index', () => {
 
     await flushPromises();
     console.log(wrapper.vm.items);
+    console.log(wrapper.vm.items);
+    console.log(wrapper.vm.items);
+    console.log(wrapper.vm.items);
+    console.log(wrapper.vm.items);
 
     expect(wrapper.vm.loading).toEqual(false);
     expect(wrapper.vm.items).toEqual(patientList);
