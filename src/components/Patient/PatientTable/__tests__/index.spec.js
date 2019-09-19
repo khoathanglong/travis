@@ -56,7 +56,6 @@ describe('index', () => {
   });
 
   it('getPatientList', async () => {
-    patientAPI.filteredPatients.mockClear();
     const projectId = 'projectId';
     // const getPatientList = jest.spyOn(wrapper.vm, 'getPatientList');
     const patientList = [{

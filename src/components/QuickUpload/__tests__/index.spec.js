@@ -7,6 +7,10 @@ import patientAPI from '@/axios/patient';
 
 describe('QuickUpload', () => {
   // call this api when component is created
+  afterEach(() => {
+    jest.clearAllMocks();
+    jest.resetAllMocks();
+  });
   const wrapper = shallowMount(index, {
     mocks: {
       $success: jest.fn(),
