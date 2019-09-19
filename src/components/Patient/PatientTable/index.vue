@@ -113,6 +113,7 @@ export default {
       this.loading = true;
       const patientList = await patientAPI.filteredPatients(projectId).catch(() => ([]));
       this.items = patientList;
+      console.log('items in original file', this.items);
       this.loading = false;
     },
     async getPatientRecords({ item }) {

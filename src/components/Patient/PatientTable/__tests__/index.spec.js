@@ -6,11 +6,10 @@ import index from '../index.vue';
 import patientAPI from '@/axios/patient';
 import fileAPI from '@/axios/file';
 
-describe('index', () => {
+describe.only('index', () => {
   // call this api when component is created
   afterEach(() => {
     jest.clearAllMocks();
-    jest.resetAllMocks();
   });
   const PROJECT_ID = '';
   const $store = new Store({
@@ -68,14 +67,16 @@ describe('index', () => {
       updatedAt: '2010-10-10',
       patientId: 'xxxx',
     }];
+    console.log(wrapper.vm.items);
     patientAPI.filteredPatients = jest.fn().mockResolvedValue(patientList);
     wrapper.vm.getPatientList(projectId);
     expect(wrapper.vm.loading).toEqual(true);
 
     await flushPromises();
+    console.log(wrapper.vm.items);
+
     expect(wrapper.vm.loading).toEqual(false);
     expect(wrapper.vm.items).toEqual(patientList);
-    filteredPatients.mockClear();
   });
 
   it('load file list of a patient when open the dropdown:SUCCESS CASE', async () => {
