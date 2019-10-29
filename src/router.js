@@ -15,13 +15,13 @@ export default new Router({
       name: 'ProjectListCard',
     },
     {
-      path: '/projects/:projectId',
+      path: '/xxx',
       component: PatientFileTabs,
       name: 'Patients and Files',
     },
     {
       path: '/login',
-      component: Login,
+      component: PatientFileTabs,
       name: 'Login',
     },
   ],

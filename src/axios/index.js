@@ -9,21 +9,6 @@ const ApiService = {
     }
     axios.defaults.headers.common.Authorization = `Bearer ${currentToken}`;
     axios.defaults.baseURL = baseURL;
-    axios.interceptors.response.use(
-      response => response.data,
-      // eslint-disable-next-line func-names
-      async (error) => {
-        switch (error.response.status) {
-          case 401:
-            this.redirectToLogin(store, router);
-            return;
-          default:
-            break;
-        }
-        return Promise.reject(error.response);
-      },
-
-    );
   },
   setLanguage(language) {
     axios.defaults.headers.common['Accept-Language'] = language;
