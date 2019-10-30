@@ -13,12 +13,6 @@ import myData from './data.json';
 // const height = 400 - margin.top - margin.bottom;
 /* eslint-disable func-names */
 
-const lineStroke = 'grey';
-const lineStrokeWidth = 3;
-const textStroke = 'none';
-const textFill = '#303030'; // darker gray
-const fontFamily = 'Helvetica';
-const fontSize = 12;
 export default {
   data() {
     return {
@@ -33,10 +27,10 @@ export default {
       },
       ySpace: 20, // each label 's distance
       r: 5,
-      lineStroke,
-      lineStrokeWidth,
-      fontSize,
-      fontFamily,
+      lineStroke: 'grey',
+      lineStrokeWidth: 3,
+      fontSize: 12,
+      domainFontSize: 20,
       d3Tip: null,
     };
   },
@@ -54,6 +48,7 @@ export default {
           endMoment: endDay,
           conceptId,
           conceptName,
+          domain,
         };
 
         const timeLineDomain = {
@@ -90,7 +85,7 @@ export default {
         }
       }, []);
       // return [{ observationData: [{ startMoment: 10, endMoment: 40, id: 100 }] }];
-      // return tData;
+      return tData.sort(() => -1);
       return [tData[4], tData[24], tData[0]];
     },
     drugLike() {
@@ -107,7 +102,8 @@ export default {
       return window.innerWidth - this.margin.left - this.margin.right;
     },
     maxDay() {
-      return d3.max(this.convertedData.map(el => el.observationData).flat().map(el => el.endMoment));
+      return d3.max(this.convertedData
+        .map(el => el.observationData).flat().map(el => el.endMoment));
     },
   },
   methods: {
@@ -142,7 +138,7 @@ export default {
         .forEach((point) => {
           const pointIndex = tooltipContentList
             .findIndex(p => p.startMoment == point.startMoment
-            && p.endMoment == point.endMoment);
+            && p.endMoment == point.endMoment && p.conceptId == point.conceptId);
           if (pointIndex > -1) {
             tooltipContentList[pointIndex].frequency += 1;
           } else {
@@ -154,7 +150,7 @@ export default {
         const startEndDifferent = content.startMoment != content.endMoment;
         tooltipContent
            += `<div style="margin-bottom:5px">
-              <strong>${content.conceptName} </strong> <br />
+              <strong>${content.conceptName}</strong> <br />
               <span>Start day: ${content.startMoment} ${startEndDifferent ? `- End day: ${content.endMoment}` : ''}</span>, 
               <span>Frequency: ${content.frequency} </span>
             </div>`;
@@ -217,8 +213,8 @@ export default {
           .attr('y1', self.height - (index + 1) * self.ySpace)
           .attr('x2', d => self.xScale(d.endMoment))
           .attr('y2', self.height - (index + 1) * self.ySpace)
-          .attr('stroke', lineStroke)
-          .attr('stroke-width', lineStrokeWidth)
+          .attr('stroke', self.lineStroke)
+          .attr('stroke-width', self.lineStrokeWidth)
           .style('fill', 'green');
       });
     },
@@ -234,8 +230,8 @@ export default {
         .attr('x', -10)
         .attr('y', (d, index) => self.height - (index + 1) * self.ySpace)
         .attr('dy', this.fontSize / 3)
-        .attr('font-size', this.fontSize)
-        .attr('font-family', this.fontFamily)
+        .attr('font-size', d => (!d.belongTo ? self.domainFontSize : self.fontSize))
+        .attr('font-weight', d => (!d.belongTo ? 'bold' : 'normal'))
         .style('text-anchor', 'end');
     },
   },
