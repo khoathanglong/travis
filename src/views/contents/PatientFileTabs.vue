@@ -8,7 +8,6 @@
 <script>
 import _ from 'lodash';
 import * as d3 from 'd3';
-import d3Tip from 'd3-tip';
 import myData from './data.json';
 
 // const height = 400 - margin.top - margin.bottom;
@@ -25,7 +24,7 @@ export default {
     return {
       records: myData.records,
       minDay: myData.observationPeriods[0].x1,
-      maxDay: myData.observationPeriods[0].x2,
+      // maxDay: myData.observationPeriods[0].x2,
       svg: null,
       xScale: null,
       yScale: null,
@@ -92,7 +91,7 @@ export default {
       }, []);
       // return [{ observationData: [{ startMoment: 10, endMoment: 40, id: 100 }] }];
       // return tData;
-      return [tData[4], tData[24]];
+      return [tData[4], tData[24], tData[0]];
     },
     drugLike() {
       return this.convertedData.filter(el => el.belongTo === 'drug')
@@ -106,6 +105,9 @@ export default {
     },
     width() {
       return window.innerWidth - this.margin.left - this.margin.right;
+    },
+    maxDay() {
+      return d3.max(this.convertedData.map(el => el.observationData).flat().map(el => el.endMoment));
     },
   },
   methods: {
@@ -133,10 +135,41 @@ export default {
       this.svg.append('g')
         .call(d3.axisLeft(this.yScale));
     },
+    tooltipContent(data, dataPoint) {
+      const tooltipContentList = [];
+      data
+        .filter(point => point.startMoment == dataPoint.startMoment)
+        .forEach((point) => {
+          const pointIndex = tooltipContentList
+            .findIndex(p => p.startMoment == point.startMoment
+            && p.endMoment == point.endMoment);
+          if (pointIndex > -1) {
+            tooltipContentList[pointIndex].frequency += 1;
+          } else {
+            tooltipContentList.push({ ...point, frequency: 1 });
+          }
+        });
+      let tooltipContent = '';
+      tooltipContentList.forEach((content) => {
+        const startEndDifferent = content.startMoment != content.endMoment;
+        tooltipContent
+           += `<div style="margin-bottom:5px">
+              <strong>${content.conceptName} </strong> <br />
+              <span>Start day: ${content.startMoment} ${startEndDifferent ? `- End day: ${content.endMoment}` : ''}</span>, 
+              <span>Frequency: ${content.frequency} </span>
+            </div>`;
+      });
+      return tooltipContent;
+    },
     drawCircle() {
       const self = this;
       // call tooltip instance
-      this.svg.call(this.d3Tip);
+      // const tooltip = this.d3Tip//;
+      // this.svg.call(tooltip);
+      const tooltipDiv = d3.select('#timelineChart').append('div')
+        .attr('class', 'tooltip')
+        .style('opacity', 0);
+
       this.convertedData.forEach((timeLine, index) => {
         this.svg
           .append('g')
@@ -149,10 +182,26 @@ export default {
           .attr('r', self.r)
           .attr('width', 100)
           .attr('height', 100)
-          .on('mouseover', this.d3Tip.show)
-          .on('mouseout', this.d3Tip.hide);
+          .on('mouseover', (d) => {
+            const tooltipContent = self.tooltipContent(timeLine.observationData, d);
+            tooltipDiv
+              .transition()
+              .duration(100)
+              .style('opacity', 1);
+
+            tooltipDiv.html(tooltipContent);
+
+            const tooltipSize = tooltipDiv.node().getBoundingClientRect();
+            tooltipDiv
+              .style('left', `${d3.event.pageX - tooltipSize.width / 2}px`)
+              .style('top', `${d3.event.pageY - tooltipSize.height}px`);
+          })
+          .on('mouseout', () => {
+            tooltipDiv.transition()
+              .duration(0)
+              .style('opacity', 0);
+          });
       });
-      // draw tooptip
     },
     drawLine() {
       const self = this;
@@ -189,34 +238,29 @@ export default {
         .attr('font-family', this.fontFamily)
         .style('text-anchor', 'end');
     },
-    createTootipInstance() {
-      this.d3Tip = d3Tip()
-        .attr('class', 'd3-tip')
-        .offset([-10, 0])
-        .html((d) => {
-          console.log(d);
-          return '<strong>Frequency:</strong> <span style=\'color:red\'>asdasd</span>';
-        });
-    },
   },
   mounted() {
-    this.createTootipInstance();
     this.drawAxis();
-    this.drawCircle();
     this.drawLine();
+    this.drawCircle();
     this.drawLabel();
   },
 };
 </script>
 
 <style>
-.d3-tip {
-  line-height: 1;
-  font-weight: bold;
-  padding: 12px;
-  background: rgba(0, 0, 0, 0.8);
-  color: green;
-  border-radius: 2px;
+div.tooltip {
+    position: absolute;
+    text-align: left;
+    width: auto;
+    height: auto;
+    padding: 4px;
+    font-size: 12px;
+    background: black;
+    border: 0px;
+    border-radius: 8px;
+    pointer-events: none;
+    color: white
 }
 
 </style>
