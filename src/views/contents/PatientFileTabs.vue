@@ -22,6 +22,7 @@ export default {
       svg: null,
       xScale: null,
       yScale: null,
+      xAxis: null,
       margin: {
         top: 200, right: 60, bottom: 30, left: 200,
       },
@@ -31,7 +32,7 @@ export default {
       lineStrokeWidth: 3,
       fontSize: 12,
       domainFontSize: 20,
-      d3Tip: null,
+      brush: null,
     };
   },
   computed: {
@@ -85,7 +86,7 @@ export default {
         }
       }, []);
       // return [{ observationData: [{ startMoment: 10, endMoment: 40, id: 100 }] }];
-      return tData.sort(() => -1);
+      // return tData.sort(() => -1);
       return [tData[4], tData[24], tData[0]];
     },
     drugLike() {
@@ -116,6 +117,7 @@ export default {
         .attr('transform',
           `translate(${this.margin.left},${this.margin.top})`);
 
+
       this.xScale = d3.scaleLinear()
         .domain([this.minDay, this.maxDay])
         .range([0, this.width]);
@@ -124,12 +126,65 @@ export default {
         .domain(0, this.convertedData.length)
         .range([0, this.height]);
 
-      this.svg.append('g')
+      this.xAxis = this.svg.append('g')
         .attr('transform', `translate(0,${this.height})`)
         .call(d3.axisBottom(this.xScale));
 
       this.svg.append('g')
         .call(d3.axisLeft(this.yScale));
+
+      this.svg.append('defs').append('svg:clipPath')
+        .attr('id', 'clip')
+        .append('svg:rect')
+        .attr('width', this.width)
+        .attr('height', this.height)
+        .attr('x', 0)
+        .attr('y', 0 - this.r);
+
+      // append tooltip
+
+      d3.select('#timelineChart').append('div')
+        .attr('class', 'tooltip')
+        .style('opacity', 0);
+
+      // on brush event
+      this.brush = d3.brushX()
+        .extent([[0, 0 - this.r], [this.width, this.height]])
+        .on('end', this.handleBrush);
+      this.svg.append('g')
+        .attr('class', 'brush')
+        .call(this.brush);
+    },
+    idled() { this.idleTimeout = null; },
+    handleBrush() {
+      const extent = d3.event.selection;
+      if (!extent) {
+        if (!this.idleTimeout) {
+          // This allows to wait a little bit
+          this.idleTimeout = setTimeout(this.idled, 350);
+          return;
+        }
+        this.xScale.domain([this.minDay, this.maxDay]);
+      } else {
+        const extent0 = this.xScale.invert(extent[0]);
+        const extent1 = this.xScale.invert(extent[1]);
+        this.xScale.domain([extent0, extent1]);
+        this.svg.select('.brush').call(this.brush.move, null);
+      }
+      // update axis
+      this.xAxis
+        .transition()
+        .duration(1000)
+        .call(d3.axisBottom(this.xScale));
+      // update circles
+      this.svg.selectAll('circle')
+        .transition().duration(1000)
+        .attr('cx', d => this.xScale(d.startMoment));
+      // update lines
+      this.svg.selectAll('.observationLine')
+        .transition().duration(1000)
+        .attr('x1', d => this.xScale(d.startMoment))
+        .attr('x2', d => this.xScale(d.endMoment));
     },
     tooltipContent(data, dataPoint) {
       const tooltipContentList = [];
@@ -150,24 +205,39 @@ export default {
         const startEndDifferent = content.startMoment != content.endMoment;
         tooltipContent
            += `<div style="margin-bottom:5px">
-              <strong>${content.conceptName}</strong> <br />
+              <strong>${content.conceptId}</strong> <br />
               <span>Start day: ${content.startMoment} ${startEndDifferent ? `- End day: ${content.endMoment}` : ''}</span>, 
               <span>Frequency: ${content.frequency} </span>
             </div>`;
       });
       return tooltipContent;
     },
+    showTooltip(timeLine, d) {
+      const tooltipContent = this.tooltipContent(timeLine.observationData, d);
+      const tooltip = d3.select('.tooltip');
+      tooltip
+        .transition()
+        .duration(100)
+        .style('opacity', 1);
+
+      tooltip.html(tooltipContent);
+
+      const tooltipSize = tooltip.node().getBoundingClientRect();
+      tooltip
+        .style('left', `${d3.event.pageX - tooltipSize.width / 2}px`)
+        .style('top', `${d3.event.pageY + 5}px`);
+    },
+    hideTooltip() {
+      const tooltip = d3.select('.tooltip');
+      tooltip.transition()
+        .duration(0)
+        .style('opacity', 0);
+    },
+
     drawCircle() {
       const self = this;
-      // call tooltip instance
-      // const tooltip = this.d3Tip//;
-      // this.svg.call(tooltip);
-      const tooltipDiv = d3.select('#timelineChart').append('div')
-        .attr('class', 'tooltip')
-        .style('opacity', 0);
-
       this.convertedData.forEach((timeLine, index) => {
-        this.svg
+        const circles = this.svg
           .append('g')
           .selectAll('circle')
           .data(timeLine.observationData)
@@ -179,36 +249,26 @@ export default {
           .attr('width', 100)
           .attr('height', 100)
           .on('mouseover', (d) => {
-            const tooltipContent = self.tooltipContent(timeLine.observationData, d);
-            tooltipDiv
-              .transition()
-              .duration(100)
-              .style('opacity', 1);
-
-            tooltipDiv.html(tooltipContent);
-
-            const tooltipSize = tooltipDiv.node().getBoundingClientRect();
-            tooltipDiv
-              .style('left', `${d3.event.pageX - tooltipSize.width / 2}px`)
-              .style('top', `${d3.event.pageY - tooltipSize.height}px`);
+            // display tooltip
+            self.showTooltip(timeLine, d);
           })
           .on('mouseout', () => {
-            tooltipDiv.transition()
-              .duration(0)
-              .style('opacity', 0);
+            self.hideTooltip();
           });
+        circles.attr('clip-path', 'url(#clip)');
       });
     },
     drawLine() {
       const self = this;
       this.convertedData.forEach((timeLine, index) => {
         const obData = timeLine.observationData.filter(el => el.endMoment !== el.startMoment);
-        this.svg
+        const lines = this.svg
           .append('g')
           .selectAll('line')
           .data(obData)
           .enter()
           .append('line')
+          .attr('class', 'observationLine')
           .attr('x1', d => self.xScale(d.startMoment))
           .attr('y1', self.height - (index + 1) * self.ySpace)
           .attr('x2', d => self.xScale(d.endMoment))
@@ -216,6 +276,7 @@ export default {
           .attr('stroke', self.lineStroke)
           .attr('stroke-width', self.lineStrokeWidth)
           .style('fill', 'green');
+        lines.attr('clip-path', 'url(#clip)');
       });
     },
     drawLabel() {
@@ -226,6 +287,7 @@ export default {
         .data(this.convertedData)
         .enter()
         .append('text')
+        .attr('class', 'label')
         .text(d => d.label)
         .attr('x', -10)
         .attr('y', (d, index) => self.height - (index + 1) * self.ySpace)
